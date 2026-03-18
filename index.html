@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Coach</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #f0ede8;
+    --text-muted: #888880;
+    --text-dim: #555550;
+    --accent: #c8f060;
+    --accent-dim: rgba(200,240,96,0.12);
+    --accent-border: rgba(200,240,96,0.3);
+    --red: #ff6b6b;
+    --amber: #ffb347;
+    --blue: #7eb8f7;
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 12px; }
+
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+    50% { opacity: 0.6; box-shadow: 0 0 4px var(--accent); }
+  }
+
+  .header-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .date-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { border-color: var(--accent-border); color: var(--accent); }
+
+  /* Macro bar */
+  .macro-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .macro-item {
+    flex: 1;
+    padding: 12px 16px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .macro-item:last-child { border-right: none; }
+
+  .macro-item-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+
+  .macro-item-vals {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .macro-current {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+
+  .macro-sep { font-size: 12px; color: var(--text-dim); }
+
+  .macro-target {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .macro-unit {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 1px;
+  }
+
+  .macro-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.5s ease;
+    opacity: 0.7;
+  }
+
+  .macro-item.calories .macro-current { color: var(--accent); }
+  .macro-item.protein .macro-current { color: var(--blue); }
+  .macro-item.fat .macro-current { color: var(--amber); }
+  .macro-item.carbs .macro-current { color: #c084fc; }
+
+  .macro-item.calories .macro-progress { background: var(--accent); }
+  .macro-item.protein .macro-progress { background: var(--blue); }
+  .macro-item.fat .macro-progress { background: var(--amber); }
+  .macro-item.carbs .macro-progress { background: #c084fc; }
+
+  /* Main layout */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+  .msg {
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.2s ease;
+    max-width: 820px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .msg.assistant .msg-avatar {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    color: var(--accent);
+  }
+
+  .msg.user .msg-avatar {
+    background: var(--surface2);
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+  }
+
+  .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    line-height: 1.65;
+    color: var(--text);
+    font-size: 14px;
+    max-width: 680px;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--surface2);
+    border-color: var(--border-strong);
+  }
+
+  .msg-bubble strong { color: var(--accent); font-weight: 500; }
+  .msg-bubble em { color: var(--text-muted); font-style: normal; font-size: 13px; }
+
+  .msg-bubble .macro-update {
+    display: inline-flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .macro-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .macro-tag.cal { background: rgba(200,240,96,0.1); color: var(--accent); border-color: var(--accent-border); }
+  .macro-tag.pro { background: rgba(126,184,247,0.1); color: var(--blue); border-color: rgba(126,184,247,0.3); }
+  .macro-tag.fat { background: rgba(255,179,71,0.1); color: var(--amber); border-color: rgba(255,179,71,0.3); }
+  .macro-tag.carb { background: rgba(192,132,252,0.1); color: #c084fc; border-color: rgba(192,132,252,0.3); }
+
+  .thinking {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+  }
+
+  .thinking-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Quick log chips */
+  .quick-log {
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .quick-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    align-self: center;
+    margin-right: 4px;
+  }
+
+  .chip {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .chip:hover {
+    background: var(--surface2);
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+
+  .input-wrap {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: flex-end;
+    padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+
+  .input-wrap:focus-within { border-color: var(--accent-border); }
+
+  .chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    max-height: 120px;
+    min-height: 22px;
+  }
+
+  .chat-input::placeholder { color: var(--text-dim); }
+
+  .send-btn {
+    background: var(--accent);
+    border: none;
+    color: #0f0f0f;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 16px;
+  }
+
+  .send-btn:hover { background: #d4f570; transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; transform: none; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-heading {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .target-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  .target-row-label { color: var(--text-muted); }
+  .target-row-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .log-item {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-item-name { color: var(--text); font-size: 13px; }
+  .log-item-macros {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .remaining-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 12px;
+  }
+  .remaining-label { color: var(--text-muted); }
+  .remaining-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+  .remaining-val.ok { color: var(--accent); }
+  .remaining-val.warn { color: var(--amber); }
+  .remaining-val.over { color: var(--red); }
+
+  .empty-log {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .macro-item-label { font-size: 9px; }
+    .macro-current { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- API Key Setup Screen -->
+<div id="apiKeyScreen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:100; flex-direction:column; align-items:center; justify-content:center; padding:2rem;">
+  <div style="max-width:420px; width:100%;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:2rem;">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></div>
+      <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;">Macro Coach</span>
+    </div>
+    <h2 style="font-size:20px;font-weight:500;margin-bottom:8px;color:var(--text);">Enter your Anthropic API key</h2>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:24px;">Your key is stored locally in this browser only and never sent anywhere except the Anthropic API. Get one at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent);">console.anthropic.com</a>.</p>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." onkeydown="if(event.key==='Enter')saveApiKey()"
+      style="width:100%;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:8px;"/>
+    <div id="apiKeyError" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:12px;"></div>
+    <button onclick="saveApiKey()" style="width:100%;background:var(--accent);border:none;color:#0f0f0f;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:12px;border-radius:var(--radius);cursor:pointer;">Start coaching</button>
+  </div>
+</div>
+
+<div id="appShell" style="display:flex; flex-direction:column; height:100vh; overflow:hidden;">
+<div class="header">
+  <div class="header-left">
+    <div class="logo-dot"></div>
+    <span class="header-title">Macro Coach</span>
+  </div>
+  <div class="header-right">
+    <span class="date-badge" id="dateBadge"></span>
+    <button class="reset-btn" onclick="resetDay()">New Day</button>
+    <button class="reset-btn" onclick="clearApiKey()" style="border-color:transparent;color:var(--text-dim);" title="Change API key">⚙</button>
+  </div>
+</div>
+
+<div class="macro-bar">
+  <div class="macro-item calories">
+    <div class="macro-item-label">Calories</div>
+    <div class="macro-item-vals">
+      <span class="macro-current" id="calCurrent">0</span>
+      <span class="macro-sep">/</span>
+      <span class="macro-target">2450</span>
+    </div>
+    <div class="macro-progress" id="calBar" style="width:0%"></div>
+  </div>
+  <div class="macro-item protein">
+    <div class="macro-item-label">Protein</div>
+    <div class="macro-item-vals">
+      <span class="macro-current" id="proCurrent">0</span>
+      <span class="macro-sep">/</span>
+      <span class="macro-target">185</span>
+      <span class="macro-unit">g</span>
+    </div>
+    <div class="macro-progress" id="proBar" style="width:0%"></div>
+  </div>
+  <div class="macro-item fat">
+    <div class="macro-item-label">Fat</div>
+    <div class="macro-item-vals">
+      <span class="macro-current" id="fatCurrent">0</span>
+      <span class="macro-sep">/</span>
+      <span class="macro-target">75</span>
+      <span class="macro-unit">g</span>
+    </div>
+    <div class="macro-progress" id="fatBar" style="width:0%"></div>
+  </div>
+  <div class="macro-item carbs">
+    <div class="macro-item-label">Carbs</div>
+    <div class="macro-item-vals">
+      <span class="macro-current" id="carbCurrent">0</span>
+      <span class="macro-sep">/</span>
+      <span class="macro-target">210</span>
+      <span class="macro-unit">g</span>
+    </div>
+    <div class="macro-progress" id="carbBar" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="chat-area">
+    <div class="messages" id="messages"></div>
+
+    <div class="quick-log">
+      <span class="quick-label">Quick</span>
+      <button class="chip" onclick="quickLog('3 eggs scrambled + whole milk latte')">Eggs + latte</button>
+      <button class="chip" onclick="quickLog('1 scoop Momentous protein in 8oz whole milk')">Momentous shake</button>
+      <button class="chip" onclick="quickLog('Greek yogurt 1 cup')">Greek yogurt</button>
+      <button class="chip" onclick="quickLog('banana')">Banana</button>
+      <button class="chip" onclick="quickLog('5g creatine')">Creatine</button>
+      <button class="chip" onclick="quickLog('chicken stir fry with rice')">Stir fry + rice</button>
+      <button class="chip" onclick="quickSend('Where am I at? What should I eat next?')">Where am I at? ↗</button>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          class="chat-input"
+          id="chatInput"
+          placeholder="Tell me what you ate, or ask anything..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Daily targets</div>
+      <div class="target-row"><span class="target-row-label">Calories</span><span class="target-row-val">2,450</span></div>
+      <div class="target-row"><span class="target-row-label">Protein</span><span class="target-row-val">185g</span></div>
+      <div class="target-row"><span class="target-row-label">Fat</span><span class="target-row-val">75g</span></div>
+      <div class="target-row"><span class="target-row-label">Carbs</span><span class="target-row-val">210g</span></div>
+    </div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-heading">Today's log</div>
+      <div id="foodLog"><span class="empty-log">Nothing logged yet</span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Remaining</div>
+      <div id="remainingPanel">
+        <div class="remaining-row"><span class="remaining-label">Calories</span><span class="remaining-val ok" id="remCal">2,450</span></div>
+        <div class="remaining-row"><span class="remaining-label">Protein</span><span class="remaining-val ok" id="remPro">185g</span></div>
+        <div class="remaining-row"><span class="remaining-label">Fat</span><span class="remaining-val ok" id="remFat">75g</span></div>
+        <div class="remaining-row"><span class="remaining-label">Carbs</span><span class="remaining-val ok" id="remCarb">210g</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TARGETS = { cal: 2450, pro: 185, fat: 75, carb: 210 };
+const SYSTEM_PROMPT = `You are a sharp, no-nonsense macro coach for Ben — a 48-year-old guy in Seattle working toward a body recomp (lean out, build muscle). He's 6'2", ~180 lbs, athletic baseline, trains 3x/week on an A/B split. He had back surgery 2 years ago (ligamentum flavum repair) with a history of sciatica.
+
+DAILY TARGETS:
+- Calories: 2,450 (training days) / 2,080 (rest days)
+- Protein: 185g minimum — this is the #1 priority
+- Fat: 75g — do not go below this, hormonal health matters at 48
+- Carbs: 210g training days / 145g rest days
+
+HIS FOODS / PATTERNS:
+- Breakfast: eggs (scrambled, any style), Greek yogurt with berries, whole milk latte (6-8oz whole milk + double espresso), sometimes a hashbrown (he knows it's not ideal)
+- Shakes: Momentous protein powder mixed with whole milk — 1 scoop = ~22g protein; 8oz whole milk = ~8g protein, ~150 kcal, ~8g fat
+- Lunch: chicken or turkey stir-fries, jasmine rice, Asian-style bowls, sesame/soy/ginger flavors
+- Dinner: salmon, chicken, lean beef; Shanxi-style noodles, pasta (olive oil based), stir-fried greens
+- Snacks: banana pre-workout, cottage cheese, dark chocolate
+- Supplements: creatine 5g/day (has the powder), Momentous protein
+
+MACRO ESTIMATES for his common foods (approximate):
+- 3 scrambled eggs: 18p, 15f, 1c, ~210 kcal
+- 1 egg: 6p, 5f, 0c, 70 kcal
+- 1 cup Greek yogurt (2%): 17p, 4f, 9c, 140 kcal
+- 6oz whole milk: 5p, 6f, 7c, 110 kcal
+- 8oz whole milk: 8p, 8f, 12c, 150 kcal
+- 1 scoop Momentous protein: 22p, 2f, 3c, 120 kcal
+- Momentous + 8oz whole milk: 30p, 10f, 15c, 270 kcal
+- Whole milk latte (8oz milk): 8p, 8f, 12c, 150 kcal
+- 1 banana: 1p, 0f, 27c, 105 kcal
+- 200g chicken breast: 46p, 4f, 0c, 220 kcal
+- 200g ground turkey: 44p, 14f, 0c, 300 kcal
+- 200g salmon: 40p, 22f, 0c, 370 kcal
+- 1 cup jasmine rice cooked: 4p, 0f, 45c, 200 kcal
+- 100g pasta dry: 13p, 2f, 72c, 350 kcal
+- 1 cup cottage cheese low-fat: 28p, 2f, 6c, 160 kcal
+- 1 hashbrown patty: 2p, 8f, 20c, 160 kcal
+- 1 tbsp olive oil: 0p, 14f, 0c, 120 kcal
+- 5g creatine: 0p, 0f, 0c, 0 kcal (no macros, just note it)
+- 15g dark chocolate: 1p, 5f, 8c, 80 kcal
+
+YOUR JOB:
+1. When Ben logs food (casual language like "had eggs and a latte" or "just crushed a bowl of rice and chicken"), extract the macros, acknowledge what he ate conversationally, tell him his RUNNING TOTALS for the day, and what he should prioritize next.
+2. Give practical, specific suggestions — not generic advice. If he's 80g short on protein at 3pm, tell him exactly what to eat to close that gap.
+3. Be direct, a little encouraging, occasionally blunt. You're his Hollywood physique coach. Not a cheerleader, not a nutritionist robot. Think trainer-in-his-corner energy.
+4. Keep responses tight — 3-5 sentences max unless he asks a detailed question.
+5. Always end food logs with his updated totals formatted EXACTLY like this on its own line at the very end (no text after it):
+
+MACROS_UPDATE:{"cal":TOTAL_CALORIES,"pro":TOTAL_PROTEIN,"fat":TOTAL_FAT,"carb":TOTAL_CARBS,"foods":[{"name":"Food name","cal":X,"pro":X,"fat":X,"carb":X}]}
+
+The MACROS_UPDATE must be valid JSON. TOTAL_CALORIES/PROTEIN/FAT/CARBS are the CUMULATIVE day totals including everything logged so far today plus what was just logged. The foods array contains only the NEW items just logged in this message.
+
+6. For non-food questions (workout advice, motivation, general questions), just answer directly — no MACROS_UPDATE needed.
+7. If he mentions a rest day, adjust your guidance to the lower targets (2,080 cal, 145g carbs).
+8. Don't lecture him about hashbrowns or imperfect choices. Acknowledge, adjust, move forward.`;
+
+let totals = { cal: 0, pro: 0, fat: 0, carb: 0 };
+let foodLog = [];
+let conversationHistory = [];
+let isLoading = false;
+let API_KEY = '';
+
+function init() {
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('dateBadge').textContent = today;
+
+  API_KEY = localStorage.getItem('macroApiKey') || '';
+  if (!API_KEY) { showApiKeyScreen(); return; }
+
+  const saved = localStorage.getItem('macroDay');
+  const savedDate = localStorage.getItem('macroDayDate');
+  const todayKey = new Date().toDateString();
+
+  if (saved && savedDate === todayKey) {
+    try {
+      const data = JSON.parse(saved);
+      totals = data.totals || { cal:0, pro:0, fat:0, carb:0 };
+      foodLog = data.foodLog || [];
+      conversationHistory = data.history || [];
+      updateBars();
+      renderLog();
+      renderHistory();
+    } catch(e) { startFresh(); }
+  } else {
+    startFresh();
+  }
+}
+
+function startFresh() {
+  localStorage.setItem('macroDayDate', new Date().toDateString());
+  showWelcome();
+}
+
+function showApiKeyScreen() {
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('apiKeyScreen').style.display = 'flex';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-')) {
+    document.getElementById('apiKeyError').textContent = 'Key should start with sk-ant-...';
+    return;
+  }
+  localStorage.setItem('macroApiKey', key);
+  API_KEY = key;
+  document.getElementById('apiKeyScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  startFresh();
+}
+
+function clearApiKey() {
+  if (!confirm('Remove API key? You\'ll need to re-enter it.')) return;
+  localStorage.removeItem('macroApiKey');
+  API_KEY = '';
+  showApiKeyScreen();
+}
+
+function showWelcome() {
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? "Morning" : hour < 17 ? "Hey" : "Evening";
+  addMessage('assistant', `${greeting}. New day, clean slate — targets are set. Tell me what you've eaten so far, or just start logging as you go. What's first?`);
+}
+
+function renderHistory() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  conversationHistory.forEach(m => {
+    if (m.role === 'user') {
+      const display = m.displayContent || m.content;
+      addMessage('user', display, false);
+    } else {
+      const clean = stripMacroUpdate(m.content);
+      addMessage('assistant', clean, false);
+    }
+  });
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function stripMacroUpdate(text) {
+  return text.replace(/\nMACROS_UPDATE:[\s\S]*$/m, '').replace(/MACROS_UPDATE:[\s\S]*$/m, '').trim();
+}
+
+function parseMacroUpdate(text) {
+  const idx = text.indexOf('MACROS_UPDATE:');
+  if (idx === -1) return null;
+  const jsonStr = text.slice(idx + 'MACROS_UPDATE:'.length).trim();
+  try {
+    return JSON.parse(jsonStr);
+  } catch(e) {
+    const match = jsonStr.match(/^\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch(e2) { return null; }
+    }
+    return null;
+  }
+}
+
+function addMessage(role, text, save = true) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'assistant' ? 'MC' : 'B';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatMessage(text);
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function formatMessage(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function showThinking() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'thinking';
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = 'MC';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble thinking';
+  bubble.innerHTML = '<div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div>';
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById('thinking');
+  if (t) t.remove();
+}
+
+async function sendMessage(overrideText) {
+  const input = document.getElementById('chatInput');
+  const text = overrideText || input.value.trim();
+  if (!text || isLoading) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addMessage('user', text);
+
+  const contextMsg = `[Current cumulative day totals so far: Calories=${totals.cal}, Protein=${totals.pro}g, Fat=${totals.fat}g, Carbs=${totals.carb}g]\n\n${text}`;
+  conversationHistory.push({ role: 'user', content: contextMsg, displayContent: text });
+
+  showThinking();
+
+  try {
+    const messages = conversationHistory.map(m => ({ role: m.role, content: m.content }));
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      removeThinking();
+      const errMsg = data.error.type === 'authentication_error'
+        ? 'Invalid API key. <a href="#" onclick="clearApiKey();return false;" style="color:var(--accent)">Update it here</a>.'
+        : `API error: ${data.error.message}`;
+      addMessage('assistant', errMsg);
+      conversationHistory.pop();
+      isLoading = false;
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+
+    const raw = data.content?.[0]?.text || "Something went wrong, try again.";
+    removeThinking();
+
+    const update = parseMacroUpdate(raw);
+    const clean = stripMacroUpdate(raw);
+
+    if (update) {
+      totals.cal = Math.round(update.cal || 0);
+      totals.pro = Math.round(update.pro || 0);
+      totals.fat = Math.round(update.fat || 0);
+      totals.carb = Math.round(update.carb || 0);
+      if (Array.isArray(update.foods)) {
+        update.foods.forEach(f => foodLog.push(f));
+        renderLog();
+      }
+      updateBars();
+    }
+
+    addMessage('assistant', clean);
+    conversationHistory.push({ role: 'assistant', content: raw });
+    saveDay();
+
+  } catch(e) {
+    removeThinking();
+    addMessage('assistant', 'Network error — check your connection and try again.');
+    conversationHistory.pop();
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function quickLog(food) {
+  document.getElementById('chatInput').value = `I had ${food}`;
+  sendMessage();
+}
+
+function quickSend(msg) {
+  sendMessage(msg);
+}
+
+function updateBars() {
+  const keys = ['cal','pro','fat','carb'];
+  const targets = [2450, 185, 75, 210];
+  keys.forEach((k, i) => {
+    const val = totals[k] || 0;
+    const pct = Math.min(100, Math.round((val / targets[i]) * 100));
+    document.getElementById(k + 'Current').textContent = val;
+    document.getElementById(k + 'Bar').style.width = pct + '%';
+  });
+
+  setRem('remCal', TARGETS.cal - (totals.cal||0), 'kcal');
+  setRem('remPro', TARGETS.pro - (totals.pro||0), 'g');
+  setRem('remFat', TARGETS.fat - (totals.fat||0), 'g');
+  setRem('remCarb', TARGETS.carb - (totals.carb||0), 'g');
+}
+
+function setRem(id, val, unit) {
+  const el = document.getElementById(id);
+  el.textContent = (val > 0 ? Math.round(val) : 0) + unit;
+  el.className = 'remaining-val ' + (val < 0 ? 'over' : val < 20 ? 'warn' : 'ok');
+}
+
+function renderLog() {
+  const el = document.getElementById('foodLog');
+  if (!foodLog.length) {
+    el.innerHTML = '<span class="empty-log">Nothing logged yet</span>';
+    return;
+  }
+  el.innerHTML = foodLog.map(f =>
+    `<div class="log-item">
+      <div class="log-item-name">${f.name}</div>
+      <div class="log-item-macros">${Math.round(f.cal||0)}kcal · ${Math.round(f.pro||0)}p · ${Math.round(f.fat||0)}f · ${Math.round(f.carb||0)}c</div>
+    </div>`
+  ).join('');
+}
+
+function saveDay() {
+  localStorage.setItem('macroDay', JSON.stringify({ totals, foodLog, history: conversationHistory }));
+  localStorage.setItem('macroDayDate', new Date().toDateString());
+}
+
+function resetDay() {
+  if (!confirm('Start a new day? This clears today\'s log.')) return;
+  totals = { cal: 0, pro: 0, fat: 0, carb: 0 };
+  foodLog = [];
+  conversationHistory = [];
+  localStorage.removeItem('macroDay');
+  document.getElementById('messages').innerHTML = '';
+  updateBars();
+  renderLog();
+  showWelcome();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+init();
+</script>
+</div><!-- /appShell -->
+</body>
+</html>
