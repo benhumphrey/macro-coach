@@ -523,8 +523,6 @@
     <div class="macro-progress" id="carbBar" style="width:0%"></div>
   </div>
 </div>
-  </div>
-</div>
 
 <div class="main">
   <div class="chat-area">
@@ -627,9 +625,9 @@ CUMULATIVE totals = everything logged today including this message. foods array 
 7. Rest day mentioned: use lower targets (2,080 cal, 145g carbs).`
   },
 
-  wife: {
-    name: 'Wife',
-    storageKey: 'macroDay_wife',
+  anne: {
+    name: 'Anne',
+    storageKey: 'macroDay_anne',
     targets: { cal: 1650, pro: 128, fat: 55, carb: 130 },
     sidebarTargets: { cal: '1,650', pro: '128g', fat: '55g', carb: '130g' },
     systemPrompt: `You are a practical, supportive macro coach for a 41-year-old woman in Seattle. Stats: 5'7", 140 lbs, goal weight 130 lbs. Activity: 1 day tennis, 1 day lifting, 2 days running or walking per week. She is on HRT and currently under investigation for primary hyperparathyroidism. She also has elevated cholesterol.
@@ -692,7 +690,7 @@ CUMULATIVE totals = everything logged today including this message. foods array 
 
 // Detect profile from URL param — default to ben
 const urlParams = new URLSearchParams(window.location.search);
-const profileKey = urlParams.get('user') === 'wife' ? 'wife' : 'ben';
+const profileKey = urlParams.get('user') === 'anne' ? 'anne' : 'ben';
 const PROFILE = PROFILES[profileKey];
 const TARGETS = PROFILE.targets;
 
