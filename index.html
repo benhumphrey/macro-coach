@@ -473,6 +473,7 @@
   <div class="header-left">
     <div class="logo-dot"></div>
     <span class="header-title">Macro Coach</span>
+    <span id="profileBadge" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-border);padding:2px 8px;border-radius:4px;letter-spacing:0.05em;text-transform:uppercase;"></span>
   </div>
   <div class="header-right">
     <span class="date-badge" id="dateBadge"></span>
@@ -487,7 +488,7 @@
     <div class="macro-item-vals">
       <span class="macro-current" id="calCurrent">0</span>
       <span class="macro-sep">/</span>
-      <span class="macro-target">2450</span>
+      <span class="macro-target" id="targetCal">2450</span>
     </div>
     <div class="macro-progress" id="calBar" style="width:0%"></div>
   </div>
@@ -496,7 +497,7 @@
     <div class="macro-item-vals">
       <span class="macro-current" id="proCurrent">0</span>
       <span class="macro-sep">/</span>
-      <span class="macro-target">185</span>
+      <span class="macro-target" id="targetPro">185</span>
       <span class="macro-unit">g</span>
     </div>
     <div class="macro-progress" id="proBar" style="width:0%"></div>
@@ -506,7 +507,7 @@
     <div class="macro-item-vals">
       <span class="macro-current" id="fatCurrent">0</span>
       <span class="macro-sep">/</span>
-      <span class="macro-target">75</span>
+      <span class="macro-target" id="targetFat">75</span>
       <span class="macro-unit">g</span>
     </div>
     <div class="macro-progress" id="fatBar" style="width:0%"></div>
@@ -516,10 +517,12 @@
     <div class="macro-item-vals">
       <span class="macro-current" id="carbCurrent">0</span>
       <span class="macro-sep">/</span>
-      <span class="macro-target">210</span>
+      <span class="macro-target" id="targetCarb">210</span>
       <span class="macro-unit">g</span>
     </div>
     <div class="macro-progress" id="carbBar" style="width:0%"></div>
+  </div>
+</div>
   </div>
 </div>
 
@@ -545,10 +548,10 @@
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-heading">Daily targets</div>
-      <div class="target-row"><span class="target-row-label">Calories</span><span class="target-row-val">2,450</span></div>
-      <div class="target-row"><span class="target-row-label">Protein</span><span class="target-row-val">185g</span></div>
-      <div class="target-row"><span class="target-row-label">Fat</span><span class="target-row-val">75g</span></div>
-      <div class="target-row"><span class="target-row-label">Carbs</span><span class="target-row-val">210g</span></div>
+      <div class="target-row"><span class="target-row-label">Calories</span><span class="target-row-val target-cal">—</span></div>
+      <div class="target-row"><span class="target-row-label">Protein</span><span class="target-row-val target-pro">—</span></div>
+      <div class="target-row"><span class="target-row-label">Fat</span><span class="target-row-val target-fat">—</span></div>
+      <div class="target-row"><span class="target-row-label">Carbs</span><span class="target-row-val target-carb">—</span></div>
     </div>
     <div class="sidebar-section" style="flex:1">
       <div class="sidebar-heading">Today's log</div>
@@ -567,8 +570,13 @@
 </div>
 
 <script>
-const TARGETS = { cal: 2450, pro: 185, fat: 75, carb: 210 };
-const SYSTEM_PROMPT = `You are a sharp, no-nonsense macro coach for Ben — a 48-year-old guy in Seattle working toward a body recomp (lean out, build muscle). He's 6'2", ~180 lbs, athletic baseline, trains 3x/week on an A/B split. He had back surgery 2 years ago (ligamentum flavum repair) with a history of sciatica.
+const PROFILES = {
+  ben: {
+    name: 'Ben',
+    storageKey: 'macroDay_ben',
+    targets: { cal: 2450, pro: 185, fat: 75, carb: 210 },
+    sidebarTargets: { cal: '2,450', pro: '185g', fat: '75g', carb: '210g' },
+    systemPrompt: `You are a sharp, no-nonsense macro coach for Ben — a 48-year-old guy in Seattle working toward a body recomp (lean out, build muscle). He's 6'2", ~180 lbs, athletic baseline, trains 3x/week on an A/B split. He had back surgery 2 years ago (ligamentum flavum repair) with a history of sciatica.
 
 DAILY TARGETS:
 - Calories: 2,450 (training days) / 2,080 (rest days)
@@ -582,10 +590,10 @@ HIS FOODS / PATTERNS:
 - Lunch: chicken or turkey stir-fries, jasmine rice, Asian-style bowls, sesame/soy/ginger flavors
 - Dinner: salmon, chicken, lean beef; Shanxi-style noodles, pasta (olive oil based), stir-fried greens
 - Snacks: banana pre-workout, cottage cheese, dark chocolate
-- Supplements: creatine 5g/day (has the powder), Momentous protein
+- Supplements: creatine 5g/day, Momentous protein
 
-MACRO ESTIMATES for his common foods (approximate):
-- 3 scrambled eggs: 18p, 15f, 1c, ~210 kcal
+MACRO ESTIMATES (approximate):
+- 3 scrambled eggs: 18p, 15f, 1c, 210 kcal
 - 1 egg: 6p, 5f, 0c, 70 kcal
 - 1 cup Greek yogurt (2%): 17p, 4f, 9c, 140 kcal
 - 6oz whole milk: 5p, 6f, 7c, 110 kcal
@@ -602,23 +610,91 @@ MACRO ESTIMATES for his common foods (approximate):
 - 1 cup cottage cheese low-fat: 28p, 2f, 6c, 160 kcal
 - 1 hashbrown patty: 2p, 8f, 20c, 160 kcal
 - 1 tbsp olive oil: 0p, 14f, 0c, 120 kcal
-- 5g creatine: 0p, 0f, 0c, 0 kcal (no macros, just note it)
+- 5g creatine: 0p, 0f, 0c, 0 kcal
 - 15g dark chocolate: 1p, 5f, 8c, 80 kcal
 
 YOUR JOB:
-1. When Ben logs food (casual language like "had eggs and a latte" or "just crushed a bowl of rice and chicken"), extract the macros, acknowledge what he ate conversationally, tell him his RUNNING TOTALS for the day, and what he should prioritize next.
-2. Give practical, specific suggestions — not generic advice. If he's 80g short on protein at 3pm, tell him exactly what to eat to close that gap.
-3. Be direct, a little encouraging, occasionally blunt. You're his Hollywood physique coach. Not a cheerleader, not a nutritionist robot. Think trainer-in-his-corner energy.
-4. Keep responses tight — 3-5 sentences max unless he asks a detailed question.
-5. Always end food logs with his updated totals formatted EXACTLY like this on its own line at the very end (no text after it):
+1. When Ben logs food conversationally, extract the macros, acknowledge what he ate, give RUNNING TOTALS, tell him what to prioritize next.
+2. Be direct, encouraging, occasionally blunt. Trainer-in-his-corner energy. Not a cheerleader, not a robot.
+3. Keep responses tight — 3-5 sentences unless he asks something detailed.
+4. Don't lecture about imperfect choices. Acknowledge, adjust, move forward.
+5. Always end food logs with this on its own final line — valid JSON, no text after it:
 
-MACROS_UPDATE:{"cal":TOTAL_CALORIES,"pro":TOTAL_PROTEIN,"fat":TOTAL_FAT,"carb":TOTAL_CARBS,"foods":[{"name":"Food name","cal":X,"pro":X,"fat":X,"carb":X}]}
+MACROS_UPDATE:{"cal":CUMULATIVE_CALORIES,"pro":CUMULATIVE_PROTEIN,"fat":CUMULATIVE_FAT,"carb":CUMULATIVE_CARBS,"foods":[{"name":"Food name","cal":X,"pro":X,"fat":X,"carb":X}]}
 
-The MACROS_UPDATE must be valid JSON. TOTAL_CALORIES/PROTEIN/FAT/CARBS are the CUMULATIVE day totals including everything logged so far today plus what was just logged. The foods array contains only the NEW items just logged in this message.
+CUMULATIVE totals = everything logged today including this message. foods array = only NEW items just logged.
+6. Non-food questions: answer directly, no MACROS_UPDATE.
+7. Rest day mentioned: use lower targets (2,080 cal, 145g carbs).`
+  },
 
-6. For non-food questions (workout advice, motivation, general questions), just answer directly — no MACROS_UPDATE needed.
-7. If he mentions a rest day, adjust your guidance to the lower targets (2,080 cal, 145g carbs).
-8. Don't lecture him about hashbrowns or imperfect choices. Acknowledge, adjust, move forward.`;
+  wife: {
+    name: 'Wife',
+    storageKey: 'macroDay_wife',
+    targets: { cal: 1650, pro: 128, fat: 55, carb: 130 },
+    sidebarTargets: { cal: '1,650', pro: '128g', fat: '55g', carb: '130g' },
+    systemPrompt: `You are a practical, supportive macro coach for a 41-year-old woman in Seattle. Stats: 5'7", 140 lbs, goal weight 130 lbs. Activity: 1 day tennis, 1 day lifting, 2 days running or walking per week. She is on HRT and currently under investigation for primary hyperparathyroidism. She also has elevated cholesterol.
+
+HEALTH CONSIDERATIONS — read carefully:
+- HRT: works in her favor for muscle preservation during deficit. Dietary fat supports hormone metabolism — do NOT let fat drop below 55g.
+- Primary hyperparathyroidism (under investigation): elevated PTH can affect calcium/bone metabolism. Do NOT suggest calcium supplements or push high-calcium foods as a health strategy. Be aware bone health is a sensitivity. Running and tennis are fine.
+- Elevated cholesterol: favor unsaturated fats (olive oil, avocado, salmon, nuts) over saturated (butter, full-fat dairy, red meat). Emphasize soluble fiber — oats, legumes, lentils, vegetables — which actively lowers LDL. Don't catastrophize saturated fat but steer toward better options naturally.
+
+DAILY TARGETS:
+- Calories: 1,650 (active days) / 1,400 (rest days)
+- Protein: 128g minimum — muscle preservation during deficit is the priority
+- Fat: 55g minimum — hormonal health, do not go below
+- Carbs: 130g active days / 90g rest days
+
+HER APPROACH TO FOOD:
+- Experienced at tracking macros — no hand-holding needed on the basics
+- Loves bulky, satiating, high-volume meals
+- Adventurous eater — offal, fermented foods, unusual ingredients, anything goes
+- Shares similar food tastes with her husband: Asian cuisines, pasta, stir-fries
+- Uses Momentous protein powder with whole milk (1 scoop = 22p, 2f, 3c, 120 kcal; 8oz whole milk = 8p, 8f, 12c, 150 kcal)
+- Prefers fiber-rich carbs, legumes, lentils, big vegetable-forward bowls
+- No foods are off limits — she knows what she's doing
+
+MACRO ESTIMATES (approximate):
+- 1 egg: 6p, 5f, 0c, 70 kcal
+- 1 cup Greek yogurt (2%): 17p, 4f, 9c, 140 kcal
+- 8oz whole milk: 8p, 8f, 12c, 150 kcal
+- 1 scoop Momentous + 8oz whole milk: 30p, 10f, 15c, 270 kcal
+- 200g chicken breast: 46p, 4f, 0c, 220 kcal
+- 200g salmon: 40p, 22f, 0c, 370 kcal (great for cholesterol — favor this)
+- 1 cup lentils cooked: 18p, 1f, 40c, 230 kcal (high fiber, excellent for LDL)
+- 1 cup edamame: 17p, 8f, 14c, 190 kcal
+- 1 cup cottage cheese low-fat: 28p, 2f, 6c, 160 kcal
+- 100g firm tofu: 10p, 5f, 2c, 90 kcal
+- 1 tbsp olive oil: 0p, 14f, 0c, 120 kcal (preferred fat source)
+- 1 cup black beans: 15p, 1f, 41c, 227 kcal
+- 1 avocado (medium): 3p, 21f, 12c, 240 kcal (good unsaturated fat)
+- 1 cup oats dry: 10p, 5f, 54c, 300 kcal (soluble fiber for cholesterol)
+- 100g pasta dry: 13p, 2f, 72c, 350 kcal
+- 1 cup jasmine rice cooked: 4p, 0f, 45c, 200 kcal
+- 1 banana: 1p, 0f, 27c, 105 kcal
+- 15g dark chocolate: 1p, 5f, 8c, 80 kcal
+
+YOUR JOB:
+1. She's experienced — treat her as a peer, not a student. Skip the basics.
+2. When she logs food, extract macros, give RUNNING TOTALS, tell her what to prioritize next.
+3. Favor high-volume, fiber-rich suggestions when she needs to fill calories. Think big bowls, legumes, vegetables — not small dense snacks.
+4. Naturally steer toward cholesterol-friendly choices without lecturing. One sentence max if you mention it at all.
+5. Keep responses tight — 3-5 sentences unless she asks something detailed.
+6. Always end food logs with this on its own final line — valid JSON, no text after it:
+
+MACROS_UPDATE:{"cal":CUMULATIVE_CALORIES,"pro":CUMULATIVE_PROTEIN,"fat":CUMULATIVE_FAT,"carb":CUMULATIVE_CARBS,"foods":[{"name":"Food name","cal":X,"pro":X,"fat":X,"carb":X}]}
+
+CUMULATIVE totals = everything logged today including this message. foods array = only NEW items just logged.
+7. Non-food questions: answer directly, no MACROS_UPDATE.
+8. Rest day mentioned: use lower targets (1,400 cal, 90g carbs).`
+  }
+};
+
+// Detect profile from URL param — default to ben
+const urlParams = new URLSearchParams(window.location.search);
+const profileKey = urlParams.get('user') === 'wife' ? 'wife' : 'ben';
+const PROFILE = PROFILES[profileKey];
+const TARGETS = PROFILE.targets;
 
 let totals = { cal: 0, pro: 0, fat: 0, carb: 0 };
 let foodLog = [];
@@ -629,12 +705,25 @@ let API_KEY = '';
 function init() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   document.getElementById('dateBadge').textContent = today;
+  document.getElementById('profileBadge').textContent = PROFILE.name;
+
+  // Update sidebar targets to match profile
+  document.querySelectorAll('.target-cal').forEach(el => el.textContent = PROFILE.sidebarTargets.cal);
+  document.querySelectorAll('.target-pro').forEach(el => el.textContent = PROFILE.sidebarTargets.pro);
+  document.querySelectorAll('.target-fat').forEach(el => el.textContent = PROFILE.sidebarTargets.fat);
+  document.querySelectorAll('.target-carb').forEach(el => el.textContent = PROFILE.sidebarTargets.carb);
+
+  // Update macro bar targets
+  document.getElementById('targetCal').textContent = PROFILE.targets.cal;
+  document.getElementById('targetPro').textContent = PROFILE.targets.pro;
+  document.getElementById('targetFat').textContent = PROFILE.targets.fat;
+  document.getElementById('targetCarb').textContent = PROFILE.targets.carb;
 
   API_KEY = localStorage.getItem('macroApiKey') || '';
   if (!API_KEY) { showApiKeyScreen(); return; }
 
-  const saved = localStorage.getItem('macroDay');
-  const savedDate = localStorage.getItem('macroDayDate');
+  const saved = localStorage.getItem(PROFILE.storageKey);
+  const savedDate = localStorage.getItem(PROFILE.storageKey + '_date');
   const todayKey = new Date().toDateString();
 
   if (saved && savedDate === todayKey) {
@@ -653,7 +742,7 @@ function init() {
 }
 
 function startFresh() {
-  localStorage.setItem('macroDayDate', new Date().toDateString());
+  localStorage.setItem(PROFILE.storageKey + '_date', new Date().toDateString());
   showWelcome();
 }
 
@@ -685,7 +774,8 @@ function clearApiKey() {
 function showWelcome() {
   const hour = new Date().getHours();
   const greeting = hour < 11 ? "Morning" : hour < 17 ? "Hey" : "Evening";
-  addMessage('assistant', `${greeting}. New day, clean slate — targets are set. Tell me what you've eaten so far, or just start logging as you go. What's first?`);
+  const name = PROFILE.name === 'Ben' ? '' : `, ${PROFILE.name}`;
+  addMessage('assistant', `${greeting}${name}. New day, clean slate — targets are set. Tell me what you've eaten so far, or just start logging as you go. What's first?`);
 }
 
 function renderHistory() {
@@ -801,7 +891,7 @@ async function sendMessage(overrideText) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        system: SYSTEM_PROMPT,
+        system: PROFILE.systemPrompt,
         messages
       })
     });
@@ -889,8 +979,8 @@ function renderLog() {
 }
 
 function saveDay() {
-  localStorage.setItem('macroDay', JSON.stringify({ totals, foodLog, history: conversationHistory }));
-  localStorage.setItem('macroDayDate', new Date().toDateString());
+  localStorage.setItem(PROFILE.storageKey, JSON.stringify({ totals, foodLog, history: conversationHistory }));
+  localStorage.setItem(PROFILE.storageKey + '_date', new Date().toDateString());
 }
 
 function resetDay() {
@@ -898,7 +988,7 @@ function resetDay() {
   totals = { cal: 0, pro: 0, fat: 0, carb: 0 };
   foodLog = [];
   conversationHistory = [];
-  localStorage.removeItem('macroDay');
+  localStorage.removeItem(PROFILE.storageKey);
   document.getElementById('messages').innerHTML = '';
   updateBars();
   renderLog();
